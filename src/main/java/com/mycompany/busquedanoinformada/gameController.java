@@ -1,12 +1,12 @@
 package com.mycompany.busquedanoinformada;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
-import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Set;
 
 public class gameController {
 
@@ -59,20 +59,26 @@ public class gameController {
     public int bfsSolver() {
         int count = 0;
         boolean win = winVerification(this.board);
-        
+        String visitedHex = new String();
+
         ArrayList<int[]> moveArray = new ArrayList<>();
 
-        Queue<int[][]> queue = new LinkedList<>();
+        Set<String> visited = new HashSet<>();
+
+        Queue<int[][]> boardsQueue = new LinkedList<>();
         Queue<ArrayList<int[]>> movesQueue = new LinkedList<>();
-        
+
         int[] firstMove = getSpace(this.board);
         moveArray.add(firstMove);
 
-        queue.offer(this.board);                            // Se agrega el primer tablero a QUEUE
+        boardsQueue.offer(this.board);                            // Se agrega el primer tablero a QUEUE
         movesQueue.offer(moveArray);                        // Se agrega el primer movimiento a MOVES QUEUE
 
-        while (!queue.isEmpty() && !win) {
-            int[][] newBoard = queue.poll();                    // Se elimina el primer tablero de QUEUE
+        visited.add(boardToString(this.board));
+        System.out.println("visited" + boardToString(this.board));
+        
+        while (!boardsQueue.isEmpty() && !win) {
+            int[][] newBoard = boardsQueue.poll();                    // Se elimina el primer tablero de QUEUE
             ArrayList<int[]> moves = movesQueue.poll();         // Se elimina el primer movimiento de MOVES QUEUE
 
             int[] currentSpaceLocation = getSpace(newBoard);
@@ -81,22 +87,29 @@ public class gameController {
 
             ArrayList<int[]> possibleMoves = getPossibleMoves(x_old, y_old);
             for (int[] nextMove : possibleMoves) {              // Recorremos todos los posibles movimientos
-                
-                ArrayList<int[]> constMove = new ArrayList<>();
-                for (int[] move : moves) {
-                    constMove.add(move);
-                }
+
+                ArrayList<int[]> constMove = new ArrayList<>(moves);
                 Object[] values = swap(newBoard, nextMove[0], nextMove[1], x_old, y_old);
 
-                queue.offer((int[][]) values[0]);                                // Se encola el nuevo tablero
-                constMove.add(new int[]{(int) values[1], (int) values[2]});      // Se enlista el nuevo paso
-                movesQueue.offer(constMove);
+                visitedHex = boardToString((int [][]) values[0]);
+                
+                if (constMove.size() >= 20) {
+                    return -1;
+                }
+                
+                if (!visited.contains(visitedHex)) {
+                    visited.add(visitedHex);
+                    boardsQueue.offer((int[][]) values[0]);                             // Se encola el nuevo tablero hijo
+                    constMove.add(new int[]{(int) values[1], (int) values[2]});         // Se enlista el nuevo paso
+                    movesQueue.offer(constMove);
+                }
 
                 if (winVerification((int[][]) values[0])) {
                     win = true;
                     moveArray = constMove;
                     break;
                 }
+
             }
         }
 
@@ -115,6 +128,17 @@ public class gameController {
         return 0;
     }
 
+    private String boardToString(int[][] board){
+        StringBuilder valuesChain = new StringBuilder();
+        for (int y = 0; y < 4; y++) {
+            for (int x = 0; x < 4; x++) {
+                 valuesChain.append(Integer.toHexString(board[x][y]));
+            }
+        }
+        
+        return valuesChain.toString();
+    }
+    
     public void randomize(int moves) {
         Random random = new Random();
         while (--moves > 0) {
