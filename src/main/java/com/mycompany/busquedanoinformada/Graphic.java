@@ -134,7 +134,7 @@ public class Graphic extends JFrame {
 
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
-                this.board[y][x] = count;
+                this.board[x][y] = count;
                 JButton button = new JButton(String.valueOf(count++));
 
                 int current_x = x;

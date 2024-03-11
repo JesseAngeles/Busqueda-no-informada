@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
+import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class gameController {
 
@@ -22,12 +25,10 @@ public class gameController {
     }
 
     void move(int x, int y) {
-        System.out.println("clic:" + x + ',' + y);
-        System.out.println("black:" + x_pos + ',' + y_pos);
+        if (Math.abs(this.x_pos - x) + Math.abs(this.y_pos - y) == 1) {
+            System.out.println("Move" + x + ',' + y);
+            graphic.updateButtons(x, y, this.x_pos, this.y_pos);
 
-        if (Math.abs(x_pos - x) + Math.abs(y_pos - y) == 1) {
-            System.out.println("Move");
-            graphic.updateButtons(x, y, x_pos, y_pos);
             Object[] values = swap(this.board, x, y, this.x_pos, this.y_pos);
             this.board = (int[][]) values[0];
             this.x_pos = (int) values[1];
@@ -35,56 +36,78 @@ public class gameController {
 
             graphic.setBoard(board);
         } else {
-            System.out.println("no move");
+            System.out.println("No move" + x + ',' + y);
         }
     }
 
-    private Object[] swap(int[][] board, int x_new, int y_new, int x_old, int y_old) {
-        int swapValue = board[x_new][y_new];
-        board[x_new][y_new] = 0;
-        board[x_old][y_old] = swapValue;
-        x_old = x_new;
-        y_old = y_new;
+    private Object[] swap(int[][] originalBoard, int x_new, int y_new, int x_old, int y_old) {
+        // Crear una copia profunda de originalBoard
+        int[][] swapBoard = new int[originalBoard.length][];
+        for (int i = 0; i < originalBoard.length; i++) {
+            swapBoard[i] = originalBoard[i].clone();
+        }
 
-        return new Object[]{board, x_old, y_old};
+        // Realizar el intercambio en la copia
+        int swapValue = swapBoard[x_new][y_new];
+        swapBoard[x_new][y_new] = swapBoard[x_old][y_old];
+        swapBoard[x_old][y_old] = swapValue;
+
+        // Devolver la copia modificada y las nuevas coordenadas
+        return new Object[]{swapBoard, x_new, y_new};
     }
 
     public int bfsSolver() {
         int count = 0;
-        boolean win = false;
+        boolean win = winVerification(this.board);
+        
+        ArrayList<int[]> moveArray = new ArrayList<>();
 
         Queue<int[][]> queue = new LinkedList<>();
-        Queue<ArrayList<int[]>> movesTree = new LinkedList<>();
+        Queue<ArrayList<int[]>> movesQueue = new LinkedList<>();
+        
+        int[] firstMove = getSpace(this.board);
+        moveArray.add(firstMove);
+
+        queue.offer(this.board);                            // Se agrega el primer tablero a QUEUE
+        movesQueue.offer(moveArray);                        // Se agrega el primer movimiento a MOVES QUEUE
+
+        while (!queue.isEmpty() && !win) {
+            int[][] newBoard = queue.poll();                    // Se elimina el primer tablero de QUEUE
+            ArrayList<int[]> moves = movesQueue.poll();         // Se elimina el primer movimiento de MOVES QUEUE
+
+            int[] currentSpaceLocation = getSpace(newBoard);
+            int x_old = currentSpaceLocation[0];
+            int y_old = currentSpaceLocation[1];
+
+            ArrayList<int[]> possibleMoves = getPossibleMoves(x_old, y_old);
+            for (int[] nextMove : possibleMoves) {              // Recorremos todos los posibles movimientos
                 
-        queue.offer(board);
-
-        while (!queue.isEmpty() && win) {
-            //   extraer el primer camino de la COLA (DEQUEUE)
-            int[][] newBoard = queue.peek();
-            ArrayList<int[]> move = movesTree.peek();   // primera interacion diferente
-            
-            int[] spaceLocation = getSpace(newBoard);
-            int x_old = spaceLocation[0];
-            int y_old = spaceLocation[1];
-
-            ArrayList<int[]> possibleMoves = getPossibleMoves(newBoard, x_old, y_old);
-            for (int[] nextMove : possibleMoves) {
-                // crear nuevos caminos a todos los hijos del camino extraido
+                ArrayList<int[]> constMove = new ArrayList<>();
+                for (int[] move : moves) {
+                    constMove.add(move);
+                }
                 Object[] values = swap(newBoard, nextMove[0], nextMove[1], x_old, y_old);
-                
-                move.add(new int[]{(int) values[1], (int) values[2]});
+
+                queue.offer((int[][]) values[0]);                                // Se encola el nuevo tablero
+                constMove.add(new int[]{(int) values[1], (int) values[2]});      // Se enlista el nuevo paso
+                movesQueue.offer(constMove);
+
                 if (winVerification((int[][]) values[0])) {
                     win = true;
-                } else {        // Agregar los nuevos caminos al final  de COLA (QUEUE)
-                    queue.offer((int[][]) values[0]);
-                    movesTree.offer(move);
+                    moveArray = constMove;
+                    break;
                 }
             }
         }
-        
-         
 
-        return count;
+        for (int[] move : moveArray) {
+            count++;
+            move(move[0], move[1]);
+            //Thread.sleep(1000);
+
+        }
+
+        return count - 1;
     }
 
     public int dfsSolver() {
@@ -95,14 +118,14 @@ public class gameController {
     public void randomize(int moves) {
         Random random = new Random();
         while (--moves > 0) {
-            ArrayList<int[]> possibleMove = getPossibleMoves(this.board, this.x_pos, this.y_pos);
+            ArrayList<int[]> possibleMove = getPossibleMoves(this.x_pos, this.y_pos);
             int numRandom = random.nextInt(possibleMove.size());
             int[] nextMove = possibleMove.get(numRandom);
             move(nextMove[0], nextMove[1]);
         }
     }
 
-    private ArrayList<int[]> getPossibleMoves(int[][] board, int x_pos, int y_pos) {
+    private ArrayList<int[]> getPossibleMoves(int x_pos, int y_pos) {
         ArrayList<int[]> possibleMove = new ArrayList<>();
 
         if (x_pos > 0) {
@@ -123,19 +146,20 @@ public class gameController {
     private boolean winVerification(int[][] board) {
         int count = 0;
         for (int y = 0; y < 4; y++) {
-            for (int x = 0; x < 10; x++) {
-                if (count != board[x][y]) {
+            for (int x = 0; x < 4; x++) {
+                if (count++ != board[x][y]) {
                     return false;
                 }
+
             }
         }
         return true;
     }
 
-    private void printBoard() {
+    private void printBoard(int[][] board) {
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 4; x++) {
-                System.out.print(board[x][y] + '\t');
+                System.out.print("-" + board[x][y] + "  ");
             }
             System.out.println("");
         }
