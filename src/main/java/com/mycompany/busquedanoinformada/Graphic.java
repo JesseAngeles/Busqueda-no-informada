@@ -20,7 +20,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class Graphic extends JFrame {
 
-    private int[][] board;
+    private byte[][] board;
     private JButton[][] buttons;
     private ImageIcon background = new ImageIcon("Assets\\background.jpg");
     private gameController controller;
@@ -41,13 +41,16 @@ public class Graphic extends JFrame {
         JMenuItem depthFunctionSolve = new JMenuItem("Depth First Search");
 
         JMenuItem randomize = new JMenuItem("Randomize");
+        JMenuItem reset =new JMenuItem("Reset");
         JMenuItem imageSelector = new JMenuItem("Select image");
-
+        
+        
         solveMenu.add(breadthFunctionSolve);
         solveMenu.add(depthFunctionSolve);
 
         menuBar.add(solveMenu);
         menuBar.add(randomize);
+        menuBar.add(reset);
         menuBar.add(imageSelector);
 
         setJMenuBar(menuBar);
@@ -57,15 +60,15 @@ public class Graphic extends JFrame {
          */
         JPanel panel = initMatrix(size);
         this.add(panel);
-        this.controller = new gameController(this, 0, 0);
+        this.controller = new gameController(this, (byte)0, (byte)0);
 
         breadthFunctionSolve.addActionListener((e) -> {
-            int movements = controller.bfsSolver();
+            byte movements = controller.bfsSolver();
             JOptionPane.showMessageDialog(this, "Resuelto en: " + movements, "SOLVED", JOptionPane.PLAIN_MESSAGE);
         });
 
         depthFunctionSolve.addActionListener((e) -> {
-            int movements = controller.dfsSolver();
+            byte movements = controller.dfsSolver();
             JOptionPane.showMessageDialog(this, "Resuelto en: " + movements, "SOLVED", JOptionPane.PLAIN_MESSAGE);
         });
 
@@ -81,6 +84,10 @@ public class Graphic extends JFrame {
             }
         });
 
+        reset.addActionListener((e) -> {
+            controller.setReset(true);
+        });
+        
         imageSelector.addActionListener((e) -> {
             JFileChooser imageChooser = new JFileChooser();
             FileNameExtensionFilter filter = new FileNameExtensionFilter("Imágenes", "jpg", "png");
@@ -126,11 +133,11 @@ public class Graphic extends JFrame {
 
     private JPanel initMatrix(int size) {
         this.buttons = new JButton[size][size];
-        this.board = new int[size][size];
+        this.board = new byte[size][size];
 
         JPanel panel = new JPanel(new GridLayout(size, size));
 
-        int count = 0;
+        byte count = 0;
 
         for (int y = 0; y < size; y++) {
             for (int x = 0; x < size; x++) {
@@ -145,7 +152,7 @@ public class Graphic extends JFrame {
                 button.setFocusPainted(false);
 
                 button.addActionListener((e) -> {
-                    controller.move(current_x, current_y);
+                    controller.move((byte) current_x,(byte) current_y);
                 });
                 this.buttons[x][y] = button;
                 panel.add(button);
@@ -155,15 +162,15 @@ public class Graphic extends JFrame {
         return panel;
     }
 
-    public int[][] getBoard() {
+    public byte[][] getBoard() {
         return this.board;
     }
 
-    public void setBoard(int[][] board) {
+    public void setBoard(byte[][] board) {
         this.board = board;
     }
 
-    void updateButtons(int new_x, int new_y, int last_x, int last_y) {
+    void updateButtons(byte new_x, byte new_y, byte last_x, byte last_y) {
         buttons[last_x][last_y].setIcon(buttons[new_x][new_y].getIcon());
         buttons[new_x][new_y].setIcon(background);
     }
