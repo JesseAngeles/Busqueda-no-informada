@@ -1,5 +1,7 @@
 package com.mycompany.busquedanoinformada;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -7,10 +9,15 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
+import java.util.Stack;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 public class gameController {
 
-    private int limit = 21;
+    private int bfsLimit = 21;
+    private int dfsLimit = 24000;
 
     private byte x_pos;
     private byte y_pos;
@@ -128,10 +135,108 @@ public class gameController {
                     }
 
                 } else {
-                    if (movesArray.size() == this.limit) {
+                    if (movesArray.size() == this.bfsLimit) {
 
-                        System.out.println("" + this.limit);
+                        System.out.println("" + this.bfsLimit);
                         this.graphic.showPannel("Moves exceded");
+                        this.graphic.setAllowMovement(true);
+                        return;
+                    }
+                    if (sizeCounter != movesArray.size()) {
+                        System.out.println("Movements yet: " + movesArray.size());
+                        sizeCounter = movesArray.size();
+                    }
+                }
+            }
+        }
+
+        for (byte[] move : moveArray) {
+            moveCounter++;
+            move(move[0], move[1]);
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        String message = "Solved in: " + --moveCounter + " movements";
+        graphic.showPannel(message);
+        this.graphic.setAllowMovement(true);
+    };
+
+    public Runnable dfsThread = () -> {
+        this.graphic.setAllowMovement(false);
+
+        int sizeCounter = 0;
+        byte moveCounter = 0;
+        boolean win = winVerification(this.board);
+
+        // Stack de tablero
+        byte[][] currentBoard;
+        Stack<byte[][]> boardsStack = new Stack<>();
+
+        // Stack de movimientos
+        byte[] firstMove = getSpace(this.board);
+        ArrayList<byte[]> moveArray = new ArrayList<>();
+        Stack<ArrayList<byte[]>> movesStack = new Stack<>();
+
+        // Set de tablero visitados
+        String visitedHex = new String();
+        Set<String> visited = new HashSet<>();
+
+        // Apilar primer elemento
+        currentBoard = duplicate(this.board);
+        boardsStack.push(currentBoard);
+
+        moveArray.add(firstMove);
+        movesStack.push(moveArray);
+
+        visitedHex = boardToString(currentBoard);
+        visited.add(visitedHex);
+
+        while (!boardsStack.isEmpty() && !win) {
+            byte[][] newBoard = boardsStack.pop();
+            ArrayList<byte[]> newMoves = movesStack.pop();
+
+            byte[] newSpace = getSpace(newBoard);
+            byte x_space = newSpace[0];
+            byte y_space = newSpace[1];
+
+            ArrayList<byte[]> possibleNextMoves = getPossibleMoves(x_space, y_space);
+
+            for (byte[] nextMove : possibleNextMoves) {
+                ArrayList<byte[]> movesArray = new ArrayList<>(newMoves);
+
+                byte[][] boardSwaped = new byte[4][4];
+                byte[] posSwaped = new byte[2];
+                String newVisited = new String();
+
+                Object[] swapValues = swap(newBoard, nextMove[0], nextMove[1], x_space, y_space);
+
+                boardSwaped = duplicate((byte[][]) swapValues[0]);
+                posSwaped[0] = (byte) swapValues[1];
+                posSwaped[1] = (byte) swapValues[2];
+
+                newVisited = boardToString(boardSwaped);
+
+                if (!visited.contains(newVisited)) {
+                    visited.add(newVisited);
+                    boardsStack.push(boardSwaped);
+                    movesArray.add(posSwaped);
+                    movesStack.push(movesArray);
+
+                    if (winVerification(boardSwaped)) {
+                        win = true;
+                        moveArray = movesArray;
+                    }
+
+                } else {
+                    if (movesArray.size() == this.dfsLimit) {
+
+                        System.out.println("" + this.dfsLimit);
+                        this.graphic.showPannel("Moves exceded");
+                        this.graphic.setAllowMovement(true);
                         return;
                     }
                     if (sizeCounter != movesArray.size()) {
@@ -212,7 +317,7 @@ public class gameController {
     private void printBoard(byte[][] board) {
         for (byte y = 0; y < 4; y++) {
             for (byte x = 0; x < 4; x++) {
-                System.out.println("-" + board[x][y] + "  ");
+                System.out.print("" + board[x][y] + "  ");
             }
             System.out.println("");
         }
@@ -246,5 +351,4 @@ public class gameController {
 
         return newBoard;
     }
-
 }

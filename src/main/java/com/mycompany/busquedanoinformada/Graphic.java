@@ -73,7 +73,8 @@ public class Graphic extends JFrame {
         });
 
         depthFunctionSolve.addActionListener((e) -> {
-
+            Thread dfs = new Thread(this.controller.dfsThread);
+            dfs.start();
         });
 
         randomize.addActionListener((e) -> {
@@ -167,7 +168,7 @@ public class Graphic extends JFrame {
         buttons[last_x][last_y].setIcon(buttons[new_x][new_y].getIcon());
         buttons[new_x][new_y].setIcon(background);
     }
-
+ 
     public void showPannel(String message) {
         JOptionPane.showMessageDialog(null, message);
     }
