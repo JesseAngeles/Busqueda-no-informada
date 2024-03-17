@@ -10,12 +10,12 @@ import java.util.Set;
 
 public class gameController {
 
+    private int limit = 21;
+
     private byte x_pos;
     private byte y_pos;
 
-    private byte moveCounter;
-
-    private boolean reset;
+    private boolean reset = false;
 
     private byte[][] board;
     private Graphic graphic;
@@ -26,13 +26,11 @@ public class gameController {
 
         this.graphic = graphic;
         this.board = graphic.getBoard();
-
-        this.reset = false;
     }
 
     void move(byte x, byte y) {
         if (Math.abs(this.x_pos - x) + Math.abs(this.y_pos - y) == 1) {
-            System.out.println("Move" + x + ',' + y);
+            System.out.println("Move: " + x + ',' + y);
             graphic.updateButtons(x, y, this.x_pos, this.y_pos);
 
             Object[] values = swap(this.board, x, y, this.x_pos, this.y_pos);
@@ -40,9 +38,11 @@ public class gameController {
             this.x_pos = (byte) values[1];
             this.y_pos = (byte) values[2];
 
+            this.graphic.setSolved(winVerification(this.board));
+
             graphic.setBoard(board);
         } else {
-            System.out.println("No move" + x + ',' + y);
+            System.out.println("No move: " + x + ',' + y);
         }
     }
 
@@ -62,25 +62,15 @@ public class gameController {
         return new Object[]{swapBoard, x_new, y_new};
     }
 
-    public byte bfsSolver() {
-        Thread bfs = new Thread(this.bfsThread);
+    public Runnable bfsThread = () -> {
+        this.graphic.setAllowMovement(false);
 
-        bfs.start();
-        try {
-            bfs.join();
-            return this.moveCounter;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return -1;
-        }
-    }
-
-    Runnable bfsThread = () -> {
-        this.moveCounter = 0;
+        int sizeCounter = 0;
+        byte moveCounter = 0;
         boolean win = winVerification(this.board);
 
         // Queue de tablero
-        byte[][] currentBoard = new byte[4][4];
+        byte[][] currentBoard;
         Queue<byte[][]> boardsQueue = new LinkedList<>();
 
         // Queue de movimientos
@@ -138,22 +128,34 @@ public class gameController {
                     }
 
                 } else {
-                    System.out.println("Movements yet: " + movesArray.size());
-                }
+                    if (movesArray.size() == this.limit) {
 
+                        System.out.println("" + this.limit);
+                        this.graphic.showPannel("Moves exceded");
+                        return;
+                    }
+                    if (sizeCounter != movesArray.size()) {
+                        System.out.println("Movements yet: " + movesArray.size());
+                        sizeCounter = movesArray.size();
+                    }
+                }
             }
         }
 
         for (byte[] move : moveArray) {
-            this.moveCounter++;
+            moveCounter++;
             move(move[0], move[1]);
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
+
+        String message = "Solved in: " + --moveCounter + " movements";
+        graphic.showPannel(message);
+        this.graphic.setAllowMovement(true);
     };
-
-    public byte dfsSolver() {
-
-        return 0;
-    }
 
     private String boardToString(byte[][] board) {
         StringBuilder valuesChain = new StringBuilder();
