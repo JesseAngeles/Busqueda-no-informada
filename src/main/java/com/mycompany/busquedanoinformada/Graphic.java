@@ -22,7 +22,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class Graphic extends JFrame {
 
-    private int randomMoves = 75;
+    private int randomMoves = 50;
     private boolean solved = true;
     private boolean allowMovement = false;
 
@@ -78,7 +78,9 @@ public class Graphic extends JFrame {
         });
 
         randomize.addActionListener((e) -> {
-            controller.randomize(this.randomMoves);
+            if (this.allowMovement) {
+                controller.randomize(this.randomMoves);
+            }
         });
 
         imageSelector.addActionListener((e) -> {
@@ -168,7 +170,7 @@ public class Graphic extends JFrame {
         buttons[last_x][last_y].setIcon(buttons[new_x][new_y].getIcon());
         buttons[new_x][new_y].setIcon(background);
     }
- 
+
     public void showPannel(String message) {
         JOptionPane.showMessageDialog(null, message);
     }

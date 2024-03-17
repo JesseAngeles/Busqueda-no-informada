@@ -1,23 +1,20 @@
 package com.mycompany.busquedanoinformada;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.math.BigInteger;
 
 public class gameController {
 
     private int bfsLimit = 21;
-    private int dfsLimit = 24000;
+
+    private BigInteger dfsLimit = new BigInteger("20922789888000");
+    private int dfsMaxDepth = 35;
 
     private byte x_pos;
     private byte y_pos;
@@ -168,6 +165,8 @@ public class gameController {
     public Runnable dfsThread = () -> {
         this.graphic.setAllowMovement(false);
 
+        BigInteger limitCounter = new BigInteger("0");
+
         int sizeCounter = 0;
         byte moveCounter = 0;
         boolean win = winVerification(this.board);
@@ -220,7 +219,8 @@ public class gameController {
 
                 newVisited = boardToString(boardSwaped);
 
-                if (!visited.contains(newVisited)) {
+                if (!visited.contains(newVisited) && movesArray.size() < this.dfsMaxDepth) {
+                    limitCounter = limitCounter.add(BigInteger.ONE);
                     visited.add(newVisited);
                     boardsStack.push(boardSwaped);
                     movesArray.add(posSwaped);
@@ -230,10 +230,8 @@ public class gameController {
                         win = true;
                         moveArray = movesArray;
                     }
-
                 } else {
-                    if (movesArray.size() == this.dfsLimit) {
-
+                    if (/*limitCounter.equals(this.dfsLimit) || */movesStack.isEmpty()) {
                         System.out.println("" + this.dfsLimit);
                         this.graphic.showPannel("Moves exceded");
                         this.graphic.setAllowMovement(true);
@@ -258,7 +256,9 @@ public class gameController {
         }
 
         String message = "Solved in: " + --moveCounter + " movements";
+        graphic.showPannel("States tested: " + limitCounter.toString());
         graphic.showPannel(message);
+
         this.graphic.setAllowMovement(true);
     };
 
